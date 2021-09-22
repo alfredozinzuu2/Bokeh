@@ -1,5 +1,6 @@
 from bokeh.io import curdoc
-from bokeh.models import ColumnDataSource, DatetimeTickFormatter
+from bokeh.transform import transform
+from bokeh.models import ColumnDataSource, DatetimeTickFormatter, CategoricalColorMapper
 from bokeh.plotting import figure
 from random import randrange
 import requests
@@ -11,12 +12,17 @@ import pandas as pd
 from itertools import cycle
 
 df = pd.read_csv('xrpusdt.csv')
-df
+df['closeTime2'] = pd.to_datetime(df['closeTime'])
+df.closeTime2
+print(float(df.closeTime.values))
 #nombre_csv = 'datos_crudos.csv'
 #df = pd.read_csv(nombre_csv)
+
 #create figure
 f=figure(title= 'Precio XRP con velas de 1 minuto',x_axis_label='Fechas', y_axis_label = 'Precio (USDT)', height = 800, width=1200,
-min_border_bottom = -800)
+min_border_bottom = 0, y_range= (float(df.low.values) -.005, float(df.high.values) +.006 ), x_axis_type = 'datetime',
+#x_range=(1632178919999,1632179919999)
+)
 f.title.text_color = 'olive'
 f.title.text_alpha = 0.6
 f.title.text_font = 'times'
@@ -40,17 +46,33 @@ def extract_value():
     return value_net
 
 #create ColumnDataSource
-data = {'x': df.closeTime.values, 'y':df.close.values}
+data = {'x': df.closeTime2.values, 'y':df.close.values,
+        'w':df.low.values, 'v':df.high.values, 'z':df.open.values, 't': ['dec' if (df['close'][0] < df['open'][0]) else 'inc']}
+
+#data = {'x':[], 'y':[],
+#        'w':[], 'v':[], 'z':[], 't':[]}
 source=ColumnDataSource(data)
 data
+color_transform = transform('t',
+                            CategoricalColorMapper(factors=['dec', 'inc'],
+                                                   palette=['red', 'green']))
 #create glyphs
-f.circle(x='x',y='y',color='olive',line_color='brown',source=source)
-f.line(x='x',y='y',source=source)
+#f.circle(x='x',y='y',color='olive',line_color='brown',source=source)
+#f.line(x='x',y='y',source=source)
+
+f.segment(x0='x', x1='x', y0='w', y1='v',
+          color=color_transform, source=source)
+# Using a segment instead of a vbar to set the width in pixels instead of X scale units.
+f.segment(x0='x', x1='x', y0='z', y1='y',
+          width=10, color=color_transform, source=source)
+
+
 
 #create periodic function
 def update():
     df = pd.read_csv('C:\\Users\\Alfredo Zinzu\\Documents\\Codigo\\Bokeh\\velas\\xrpusdt.csv')
-    new_data=dict(x=[df.closeTime],y=[df.close])
+    #df['closeTime2'] = pd.to_datetime(df['closeTime'])
+    new_data=dict(x=[pd.to_datetime(df['closeTime'][0])],y=[df.close],w=[df.low],v=[df.high],z=[df.open],t=['dec' if (df['close'][0] < df['open'][0]) else 'inc'])
     source.stream(new_data,rollover=3000)
     #print(source.data)
 f.xaxis.formatter=DatetimeTickFormatter(
@@ -78,4 +100,7 @@ curdoc().add_root(f)
 #curdoc().add_periodic_callback(stream, 10)
 
 
-curdoc().add_periodic_callback(update,40000)
+curdoc().add_periodic_callback(update,4000)
+
+
+#esta es la versión que sólo plotea la serie de tiempo
