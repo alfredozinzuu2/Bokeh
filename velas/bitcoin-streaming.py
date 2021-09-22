@@ -70,8 +70,7 @@ f.segment(x0='x', x1='x', y0='w', y1='v',
 f.segment(x0='x', x1='x', y0='z', y1='y',
           width=10, color=color_transform, source=source)
 
-f.select_one(HoverTool).tooltips = [('Fecha','@x{%b-%d %l-%M}'), ('Close Price','@y'), ('Open Price','@z'),
- ('High Price','@v'), ('Low Price','@w')]
+f.select_one(HoverTool).tooltips = [('Fecha','@x{%b-%d %l-%M}'), ('Close Price','@y'), ('Open Price','@z'),('High Price','@v'), ('Low Price','@w')]
 
 f.select_one(HoverTool).formatters = {'@x': 'datetime'}
 
@@ -81,10 +80,13 @@ def update():
     #df['closeTime2'] = pd.to_datetime(df['closeTime'])
 
     new_data=dict(x=[pd.to_datetime(df['closeTime'][0],unit='ms')],y=[df.close],w=[df.low],v=[df.high],z=[df.open],t=['dec' if (df['close'][0] < df['open'][0]) else 'inc'])
-    if new_data['z'] != source.data['z'][-1]:
-
-        source.stream(new_data,rollover=30)
-    #print(source.data)
+    source.stream(new_data,rollover=3000)
+    #if new_data['z'] == source.data['z'][-1]:
+    #    for k, v in source.data.items(): v = v[:-1]
+    #else:
+    #    pass
+        #for k, v in source.data.items(): v = print(v[1])
+        #for k, v in source.data.items(): v = print(v[1])
 
 
 
@@ -101,7 +103,7 @@ curdoc().add_root(f)
 #curdoc().add_periodic_callback(stream, 10)
 
 
-curdoc().add_periodic_callback(update,6000)
+curdoc().add_periodic_callback(update,1000)
 
 
 #esta es la versión que sólo plotea la serie de tiempo
